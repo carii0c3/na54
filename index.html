@@ -25,6 +25,7 @@
       margin-bottom: 10px;
       border-left: 5px solid #007BFF;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
     }
     .form-aviso {
       margin-bottom: 20px;
@@ -46,6 +47,20 @@
     .form-aviso button:hover {
       background: #0056b3;
     }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .delete-btn:hover {
+      background: #b52a38;
+    }
   </style>
 </head>
 <body>
@@ -59,18 +74,29 @@
       <button onclick="adicionarAviso()">Adicionar Aviso</button>
     </div>
 
-    <div id="avisos"></div>
+    <div id="avisos">
+      <!-- Exemplo de aviso já incluído -->
+      <div class="aviso">
+        <strong>Missão Semanal no Servidor</strong>
+        <p>Hoje teremos <strong>missão semanal</strong> em nosso servidor às <strong>08:30 (horário do servidor)</strong>, logo após o <strong>Boss Mundial</strong>. Preparem-se!</p>
+        <button class="delete-btn" onclick="this.parentElement.remove()">Excluir</button>
+      </div>
+    </div>
   </div>
 
   <script>
     function adicionarAviso() {
-      const titulo = document.getElementById('titulo').value;
-      const mensagem = document.getElementById('mensagem').value;
+      const titulo = document.getElementById('titulo').value.trim();
+      const mensagem = document.getElementById('mensagem').value.trim();
 
       if (titulo && mensagem) {
         const avisoDiv = document.createElement('div');
         avisoDiv.className = 'aviso';
-        avisoDiv.innerHTML = `<strong>${titulo}</strong><p>${mensagem}</p>`;
+        avisoDiv.innerHTML = `
+          <strong>${titulo}</strong>
+          <p>${mensagem}</p>
+          <button class="delete-btn" onclick="this.parentElement.remove()">Excluir</button>
+        `;
         document.getElementById('avisos').prepend(avisoDiv);
 
         document.getElementById('titulo').value = '';
