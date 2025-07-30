@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel de Avisos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .aviso {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-left: 5px solid #007BFF;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-aviso {
+      margin-bottom: 20px;
+    }
+    .form-aviso input, .form-aviso textarea, .form-aviso button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .form-aviso button {
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    .form-aviso button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Painel de Avisos</h1>
+
+    <div class="form-aviso">
+      <input type="text" id="titulo" placeholder="Título do aviso" />
+      <textarea id="mensagem" rows="3" placeholder="Mensagem do aviso"></textarea>
+      <button onclick="adicionarAviso()">Adicionar Aviso</button>
+    </div>
+
+    <div id="avisos"></div>
+  </div>
+
+  <script>
+    function adicionarAviso() {
+      const titulo = document.getElementById('titulo').value;
+      const mensagem = document.getElementById('mensagem').value;
+
+      if (titulo && mensagem) {
+        const avisoDiv = document.createElement('div');
+        avisoDiv.className = 'aviso';
+        avisoDiv.innerHTML = `<strong>${titulo}</strong><p>${mensagem}</p>`;
+        document.getElementById('avisos').prepend(avisoDiv);
+
+        document.getElementById('titulo').value = '';
+        document.getElementById('mensagem').value = '';
+      } else {
+        alert('Preencha o título e a mensagem do aviso!');
+      }
+    }
+  </script>
+
+</body>
+</html>
