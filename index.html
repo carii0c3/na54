@@ -1,111 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel de Avisos</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Central de Downloads</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      margin: 0;
-      padding: 20px;
+    body { font-family: Arial, sans-serif; margin:0; background:#f7f7f8; color:#111; }
+    header { background:#222; color:#fff; padding:16px; text-align:center; }
+    
+    /* 🖼️ Banner */
+    .banner {
+      width:100%;
+      height:250px;
+      background:url("https://via.placeholder.com/1200x250.png?text=Central+de+Downloads") center/cover no-repeat;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-size:28px;
+      font-weight:bold;
+      text-shadow:0 2px 6px rgba(0,0,0,0.7);
     }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .aviso {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-left: 5px solid #007BFF;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: relative;
-    }
-    .form-aviso {
-      margin-bottom: 20px;
-    }
-    .form-aviso input, .form-aviso textarea, .form-aviso button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .form-aviso button {
-      background: #007BFF;
-      color: white;
-      cursor: pointer;
-      border: none;
-    }
-    .form-aviso button:hover {
-      background: #0056b3;
-    }
-    .delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #dc3545;
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .delete-btn:hover {
-      background: #b52a38;
-    }
+
+    main { max-width:900px; margin:auto; padding:20px; }
+    .search { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+    .search input { padding:8px; border:1px solid #ccc; border-radius:6px; width:60%; }
+    .search button { padding:8px 12px; background:#007bff; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    .search button:hover { background:#0056b3; }
+
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; }
+    .card { background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 5px rgba(0,0,0,0.1); display:flex; flex-direction:column; justify-content:space-between; }
+    .card h3 { margin:0 0 8px; }
+    .card p { font-size:14px; color:#555; flex-grow:1; }
+    .card a { background:#007bff; color:#fff; text-decoration:none; text-align:center; padding:8px; border-radius:6px; display:block; margin-top:12px; }
+    .card a:hover { background:#0056b3; }
+    footer { text-align:center; padding:16px; color:#555; font-size:14px; }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Central de Downloads</h1>
+  </header>
 
-  <div class="container">
-    <h1>Painel de Avisos</h1>
-
-    <div class="form-aviso">
-      <input type="text" id="titulo" placeholder="Título do aviso" />
-      <textarea id="mensagem" rows="3" placeholder="Mensagem do aviso"></textarea>
-      <button onclick="adicionarAviso()">Adicionar Aviso</button>
-    </div>
-
-    <div id="avisos">
-      <!-- Exemplo de aviso já incluído -->
-      <div class="aviso">
-        <strong>Missão Semanal no Servidor</strong>
-        <p>Hoje teremos <strong>missão semanal</strong> em nosso servidor às <strong>08:30 (horário do servidor)</strong>, logo após o <strong>Boss Mundial</strong>. Preparem-se!</p>
-        <button class="delete-btn" onclick="this.parentElement.remove()">Excluir</button>
-      </div>
-    </div>
+  <!-- 🖼️ Banner -->
+  <div class="banner">
+    Bem-vindo à Central de Downloads
   </div>
 
+  <main>
+    <div class="search">
+      <input id="search" placeholder="Buscar download...">
+      <button onclick="buscar()">Buscar</button>
+    </div>
+
+    <div id="lista" class="grid"></div>
+  </main>
+
+  <footer>
+    <p>© 2025 — Todos os direitos reservados</p>
+  </footer>
+
   <script>
-    function adicionarAviso() {
-      const titulo = document.getElementById('titulo').value.trim();
-      const mensagem = document.getElementById('mensagem').value.trim();
+    const downloads = [
+      { titulo: "Release 9172", desc: "ATUALIZAÇÃO MAIS RECENTE", link: "https://drive.google.com/file/d/19Zp9mlF3wGhyImfxXnQNcOpkylRS22iB/view?usp=drive_link" },
+      { titulo: "WinRAR 6.0", desc: "Compactador de arquivos", link: "https://www.win-rar.com/start.html?&L=9." },
+      { titulo: "HABILITA HOTLINE 2025", desc: "ATUAL", link: "https://drive.google.com/file/d/1ryhWwk41tiIDySYTrDH_l36v-cV0YA0C/view?usp=sharing" },
+      { titulo: "Microsoft Office 2021", desc: "Pacote de produtividade", link: "https://example.com/office" }
+    ];
 
-      if (titulo && mensagem) {
-        const avisoDiv = document.createElement('div');
-        avisoDiv.className = 'aviso';
-        avisoDiv.innerHTML = `
-          <strong>${titulo}</strong>
-          <p>${mensagem}</p>
-          <button class="delete-btn" onclick="this.parentElement.remove()">Excluir</button>
-        `;
-        document.getElementById('avisos').prepend(avisoDiv);
-
-        document.getElementById('titulo').value = '';
-        document.getElementById('mensagem').value = '';
-      } else {
-        alert('Preencha o título e a mensagem do aviso!');
-      }
+    function render(lista) {
+      const div = document.getElementById("lista");
+      div.innerHTML = "";
+      if (lista.length === 0) return div.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+      lista.forEach(d => {
+        div.innerHTML += `
+          <div class="card">
+            <h3>${d.titulo}</h3>
+            <p>${d.desc}</p>
+            <a href="${d.link}" target="_blank">Baixar</a>
+          </div>`;
+      });
     }
-  </script>
 
+    function buscar() {
+      const termo = document.getElementById("search").value.toLowerCase();
+      const filtrados = downloads.filter(d =>
+        d.titulo.toLowerCase().includes(termo) || d.desc.toLowerCase().includes(termo)
+      );
+      render(filtrados);
+    }
+
+    render(downloads);
+  </script>
 </body>
 </html>
