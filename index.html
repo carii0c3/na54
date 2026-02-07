@@ -1,15 +1,401 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timing - Timers & Alarmes</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #0b0f14; color: #e7eef7; }
+    header { padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0; background: rgba(11,15,20,.9); backdrop-filter: blur(8px); }
+    h1 { margin: 0; font-size: 18px; }
+    .sub { margin-top: 6px; opacity: .8; font-size: 13px; }
+    main { padding: 16px; max-width: 980px; margin: 0 auto; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .card { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; background: rgba(255,255,255,.03); }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .name { font-weight: 700; }
+    .meta { font-size: 12px; opacity: .8; margin-top: 2px; }
+    .timer { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 800; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .chip { border: 1px solid rgba(255,255,255,.10); border-radius: 12px; padding: 10px; background: rgba(255,255,255,.02); }
+    .chip label { font-size: 12px; opacity: .85; display: block; margin-bottom: 6px; }
+    input, select, button {
+      width: 100%; box-sizing: border-box;
+      background: #0f1620; color: #e7eef7;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px; padding: 10px 10px;
+      outline: none;
+    }
+    button { cursor: pointer; font-weight: 700; }
+    button.primary { background: #1b2a3c; }
+    button.danger { background: #3b1620; }
+    .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .actions > * { flex: 1 1 180px; }
+    .tog { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .tog input { width: auto; }
+    .hint { font-size: 12px; opacity: .75; margin-top: 8px; line-height: 1.4; }
+    .warn { color: #ffd38a; }
+    @media (max-width: 820px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Timing — Timers & Alarmes</h1>
+  <div class="sub">Contagem regressiva + alarme quando faltar 10 minutos. Preferências salvas no navegador.</div>
+</header>
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Create NFT Information Site</title>
-    </head>
+<main>
+  <div class="card">
+    <div class="top">
+      <div>
+        <div class="name">Adicionar / editar evento</div>
+        <div class="meta">Modo “Horários do dia” (ex.: 10:00, 14:00, 18:00) ou “Intervalo” (ex.: a cada 120 min).</div>
+      </div>
+    </div>
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+    <div class="grid">
+      <div class="chip">
+        <label>Nome</label>
+        <input id="f_name" placeholder="Ex.: Boss X / Mapa Y" />
+      </div>
+
+      <div class="chip">
+        <label>Grupo</label>
+        <input id="f_group" placeholder="Ex.: Bicheon / Snake Pit" />
+      </div>
+
+      <div class="chip">
+        <label>Tipo</label>
+        <select id="f_type">
+          <option value="daily_times">Horários do dia</option>
+          <option value="interval">Intervalo (min)</option>
+        </select>
+      </div>
+
+      <div class="chip">
+        <label>Alarme</label>
+        <div class="tog">
+          <span>Ativo</span>
+          <input id="f_alarm" type="checkbox" checked />
+        </div>
+      </div>
+
+      <div class="chip" style="grid-column: span 2;">
+        <label>Horários (HH:MM) separados por vírgula</label>
+        <input id="f_times" placeholder="10:00, 14:00, 18:00" />
+      </div>
+
+      <div class="chip">
+        <label>Intervalo (min)</label>
+        <input id="f_interval" type="number" min="1" placeholder="Ex.: 120" />
+      </div>
+
+      <div class="chip">
+        <label>Início (para intervalo)</label>
+        <input id="f_start" type="datetime-local" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btn_add">Salvar evento</button>
+      <button id="btn_test">Testar som</button>
+      <button class="danger" id="btn_clear">Apagar tudo</button>
+    </div>
+
+    <div class="hint warn">
+      Dica: alguns navegadores só liberam áudio após um clique. Se não tocar, clique em “Testar som” uma vez.
+    </div>
+  </div>
+
+  <div style="height: 14px;"></div>
+
+  <div id="list" class="row"></div>
+</main>
+
+<script>
+  const LS_KEY = "timing_events_v1";
+
+  /** @type {Array<{
+   * id: string, name: string, group: string,
+   * type: "daily_times"|"interval",
+   * times?: string[], intervalMin?: number, startAt?: string,
+   * alarmOn: boolean
+   * }>} */
+  let events = [];
+
+  // --- Audio (beep simples) ---
+  let audioCtx = null;
+  function beep(durationMs = 450, freq = 880) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.value = freq;
+      g.gain.value = 0.06;
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start();
+      setTimeout(() => { o.stop(); }, durationMs);
+    } catch (e) {
+      console.warn("Áudio indisponível:", e);
+      alert("Não consegui tocar o som (bloqueio do navegador).");
+    }
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      events = raw ? JSON.parse(raw) : [];
+    } catch {
+      events = [];
+    }
+  }
+  function save() {
+    localStorage.setItem(LS_KEY, JSON.stringify(events));
+  }
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function fmtHMS(ms) {
+    ms = Math.max(0, ms);
+    const s = Math.floor(ms / 1000);
+    const hh = Math.floor(s / 3600);
+    const mm = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    return `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+  }
+
+  function nextOccurrence(ev, now = new Date()) {
+    if (ev.type === "daily_times") {
+      const times = (ev.times || []).map(t => t.trim()).filter(Boolean);
+      if (!times.length) return null;
+
+      const candidates = [];
+      for (const t of times) {
+        const [H, M] = t.split(":").map(Number);
+        if (Number.isFinite(H) && Number.isFinite(M)) {
+          const d = new Date(now);
+          d.setHours(H, M, 0, 0);
+          candidates.push(d);
+          const d2 = new Date(d);
+          d2.setDate(d2.getDate() + 1);
+          candidates.push(d2);
+        }
+      }
+      candidates.sort((a,b) => a - b);
+      return candidates.find(d => d > now) || null;
+    }
+
+    if (ev.type === "interval") {
+      const intervalMin = Number(ev.intervalMin);
+      if (!Number.isFinite(intervalMin) || intervalMin <= 0) return null;
+
+      const start = ev.startAt ? new Date(ev.startAt) : null;
+      if (!start || isNaN(start.getTime())) return null;
+
+      const intervalMs = intervalMin * 60 * 1000;
+      const elapsed = now - start;
+      const k = Math.floor(elapsed / intervalMs) + 1;
+      const next = new Date(start.getTime() + k * intervalMs);
+      return next > now ? next : null;
+    }
+
+    return null;
+  }
+
+  // Alarmes: tocar quando faltar <= 10:00 e > 09:55 (janela anti-spam)
+  const fired = new Set(); // chave: `${id}_${isoMinute}`
+  function handleAlarm(ev, next, now) {
+    if (!ev.alarmOn || !next) return;
+    const diffMs = next - now;
+    const diffSec = Math.floor(diffMs / 1000);
+
+    if (diffSec <= 600 && diffSec >= 595) {
+      const isoMinute = next.toISOString().slice(0,16); // até minuto
+      const key = `${ev.id}_${isoMinute}`;
+      if (!fired.has(key)) {
+        fired.add(key);
+        beep(500, 880);
+        setTimeout(() => beep(350, 660), 550);
+      }
+    }
+  }
+
+  function render() {
+    const list = document.getElementById("list");
+    const now = new Date();
+
+    // agrupar por group
+    const groups = new Map();
+    for (const ev of events) {
+      const g = (ev.group || "Sem grupo").trim() || "Sem grupo";
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(ev);
+    }
+
+    list.innerHTML = "";
+    for (const [gname, evs] of [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0]))) {
+      const wrap = document.createElement("div");
+      wrap.className = "card";
+
+      const header = document.createElement("div");
+      header.className = "top";
+      header.innerHTML = `
+        <div>
+          <div class="name">${escapeHtml(gname)}</div>
+          <div class="meta">${evs.length} evento(s)</div>
+        </div>
+      `;
+      wrap.appendChild(header);
+
+      for (const ev of evs) {
+        const next = nextOccurrence(ev, now);
+        const diff = next ? (next - now) : null;
+
+        handleAlarm(ev, next, now);
+
+        const item = document.createElement("div");
+        item.className = "card";
+        item.style.marginTop = "12px";
+        item.innerHTML = `
+          <div class="top">
+            <div>
+              <div class="name">${escapeHtml(ev.name || "Sem nome")}</div>
+              <div class="meta">
+                ${ev.type === "daily_times" ? "Horários: " + escapeHtml((ev.times||[]).join(", ")) : "Intervalo: " + escapeHtml(String(ev.intervalMin||"")) + " min"}
+                ${ev.type === "interval" ? " • Início: " + escapeHtml(ev.startAt || "") : ""}
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="timer">${diff === null ? "—" : fmtHMS(diff)}</div>
+              <div class="meta">${next ? ("Próximo: " + next.toLocaleString()) : "Config incompleta"}</div>
+            </div>
+          </div>
+          <div class="actions">
+            <button data-act="toggle" data-id="${ev.id}">${ev.alarmOn ? "Alarme: ON" : "Alarme: OFF"}</button>
+            <button data-act="edit" data-id="${ev.id}">Editar</button>
+            <button class="danger" data-act="del" data-id="${ev.id}">Excluir</button>
+          </div>
+        `;
+        wrap.appendChild(item);
+      }
+
+      list.appendChild(wrap);
+    }
+
+    if (!events.length) {
+      const empty = document.createElement("div");
+      empty.className = "card";
+      empty.innerHTML = `<div class="name">Nenhum evento</div><div class="hint">Adicione um evento acima para começar.</div>`;
+      list.appendChild(empty);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+  }
+
+  // --- Form helpers ---
+  function setFormFromEvent(ev) {
+    document.getElementById("f_name").value = ev?.name || "";
+    document.getElementById("f_group").value = ev?.group || "";
+    document.getElementById("f_type").value = ev?.type || "daily_times";
+    document.getElementById("f_alarm").checked = ev?.alarmOn ?? true;
+    document.getElementById("f_times").value = (ev?.times || []).join(", ");
+    document.getElementById("f_interval").value = ev?.intervalMin ?? "";
+    document.getElementById("f_start").value = ev?.startAt ? ev.startAt.slice(0,16) : "";
+    document.getElementById("btn_add").dataset.editing = ev?.id || "";
+    document.getElementById("btn_add").textContent = ev ? "Atualizar evento" : "Salvar evento";
+  }
+
+  function readForm() {
+    const type = document.getElementById("f_type").value;
+    const name = document.getElementById("f_name").value.trim();
+    const group = document.getElementById("f_group").value.trim();
+    const alarmOn = document.getElementById("f_alarm").checked;
+
+    const ev = { type, name, group, alarmOn };
+
+    if (type === "daily_times") {
+      const times = document.getElementById("f_times").value
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+      ev.times = times;
+      ev.intervalMin = undefined;
+      ev.startAt = undefined;
+    } else {
+      ev.intervalMin = Number(document.getElementById("f_interval").value);
+      const startVal = document.getElementById("f_start").value;
+      ev.startAt = startVal ? new Date(startVal).toISOString() : "";
+      ev.times = undefined;
+    }
+    return ev;
+  }
+
+  // --- Events wiring ---
+  document.getElementById("btn_add").addEventListener("click", () => {
+    const editingId = document.getElementById("btn_add").dataset.editing || "";
+    const data = readForm();
+
+    if (!data.name) return alert("Informe um nome.");
+    if (data.type === "daily_times" && (!data.times || !data.times.length)) return alert("Informe pelo menos 1 horário (HH:MM).");
+    if (data.type === "interval") {
+      if (!Number.isFinite(data.intervalMin) || data.intervalMin <= 0) return alert("Informe um intervalo válido (min).");
+      if (!data.startAt) return alert("Informe a data/hora de início.");
+    }
+
+    if (editingId) {
+      const idx = events.findIndex(e => e.id === editingId);
+      if (idx >= 0) events[idx] = { ...events[idx], ...data };
+    } else {
+      events.push({ id: crypto.randomUUID(), ...data });
+    }
+
+    save();
+    setFormFromEvent(null);
+    render();
+  });
+
+  document.getElementById("btn_test").addEventListener("click", () => beep(450, 880));
+  document.getElementById("btn_clear").addEventListener("click", () => {
+    if (!confirm("Apagar todos os eventos?")) return;
+    events = [];
+    save();
+    render();
+  });
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const act = btn.dataset.act;
+    const ev = events.find(x => x.id === id);
+    if (!ev) return;
+
+    if (act === "toggle") {
+      ev.alarmOn = !ev.alarmOn;
+      save();
+      render();
+    }
+    if (act === "edit") {
+      setFormFromEvent(ev);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (act === "del") {
+      if (!confirm(`Excluir "${ev.name}"?`)) return;
+      events = events.filter(x => x.id !== id);
+      save();
+      render();
+    }
+  });
+
+  // init
+  load();
+  setFormFromEvent(null);
+  render();
+  setInterval(render, 1000);
+</script>
+</body>
+</html>
