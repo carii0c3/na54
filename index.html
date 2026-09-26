@@ -24,7 +24,7 @@ button:hover{filter:brightness(1.1)}.btn-secondary{background:#293650}.btn-dange
 .empty{padding:45px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--border);border-radius:16px;grid-column:1/-1}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:15px;z-index:5}.modal.open{display:flex}.modal-box{width:min(650px,100%);background:#121a2d;border:1px solid var(--border);border-radius:18px;padding:22px}
 .form{display:grid;gap:12px}.form label{font-size:13px;color:var(--muted);font-weight:700}.form input,.form textarea,.form select{width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0d1425;color:white;font:inherit}.form textarea{min-height:100px;resize:vertical}.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:5px}
-@media(max-width:600px){.top{align-items:flex-start;flex-direction:column}h1{font-size:25px}.container{padding:20px 12px}}
+.reward{display:flex;align-items:center;gap:10px;cursor:pointer;background:#0d1425;border:1px solid #2b3857;border-radius:12px;padding:8px 10px;transition:.2s}.reward:hover{border-color:#7c5cff;transform:translateY(-1px)}.reward img{width:42px;height:42px;object-fit:cover;border-radius:9px}.reward-name{font-weight:700;color:#e7ecf7}.reward-hint{display:block;color:#7f8ba3;font-size:11px;margin-top:2px}.item-modal-img{width:130px;height:130px;border-radius:20px;display:block;margin:5px auto 15px;box-shadow:0 10px 35px rgba(0,0,0,.35)}.item-modal{text-align:center}.item-modal p{color:#aab4ca;line-height:1.5}.item-modal .item-close{margin-top:10px}@media(max-width:600px){.top{align-items:flex-start;flex-direction:column}h1{font-size:25px}.container{padding:20px 12px}}
 </style>
 </head>
 <body>
@@ -67,6 +67,15 @@ button:hover{filter:brightness(1.1)}.btn-secondary{background:#293650}.btn-dange
  </div>
 </div>
 
+<div class="modal" id="itemModal">
+ <div class="modal-box item-modal">
+  <img class="item-modal-img" id="itemImg" src="" alt="Item">
+  <h2 id="itemTitle">Item</h2>
+  <p id="itemDesc">Detalhes do item da missão.</p>
+  <button class="btn-secondary item-close" onclick="closeItemModal()">Fechar</button>
+ </div>
+</div>
+
 <script>
 const initialMissions = [
  {id:1,local:"Compartimento Interno do Navio",world:"",boss:"Premiação / Evento de quinta-feira",how:"Como fazer o evento de quinta-feira",reward:"500 PO",priority:"low",done:false},
@@ -84,6 +93,29 @@ let currentFilter = "all";
 
 function save(){localStorage.setItem("weeklyMissions",JSON.stringify(missions))}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+const rewardAssets = {
+ "500 PO":"items/po.svg",
+ "500 Elixir":"items/elixir.svg",
+ "Moeda do Dragão":"items/moeda-dragao.svg",
+ "Pedra Preta Raro":"items/pedra-preta-raro.svg",
+ "Pedra Roxa Lendária e Pedaço Épico":"items/pedra-roxa-epico.svg",
+ "—":"items/sem-recompensa.svg"
+};
+function rewardImage(reward){
+ const exact=rewardAssets[reward];
+ if(exact) return exact;
+ if(reward.includes("Pedra Roxa Lendária")) return "items/pedra-roxa-epico.svg";
+ return "items/item.svg";
+}
+function showReward(encoded){
+ const reward=decodeURIComponent(encoded);
+ document.getElementById("itemTitle").textContent=reward;
+ document.getElementById("itemImg").src=rewardImage(reward);
+ document.getElementById("itemDesc").textContent="Recompensa vinculada a esta missão semanal. Clique em Fechar para voltar à lista.";
+ document.getElementById("itemModal").classList.add("open");
+}
+function closeItemModal(){document.getElementById("itemModal").classList.remove("open")}
+
 function render(){
  const el=document.getElementById("missions");
  let list=missions.filter(m=>{
@@ -103,7 +135,7 @@ function render(){
    ${m.world?`<div><span class="label">🌍 Mundo</span><br>${esc(m.world)}</div>`:""}
    <div><span class="label">👹 Boss / Evento</span><br>${esc(m.boss)}</div>
    ${m.how?`<div><span class="label">⚔️ Como fazer</span><br>${esc(m.how)}</div>`:""}
-   <div><span class="label">🎁 Premiação</span><br>${esc(m.reward)}</div>
+   <div><span class="label">🎁 Premiação</span><div class="reward" onclick="showReward('${encodeURIComponent(m.reward)}')"><img src="${rewardImage(m.reward)}" alt="${esc(m.reward)}"><div><div class="reward-name">${esc(m.reward)}</div><span class="reward-hint">Clique para ver o item</span></div></div></div>
   </div>
   <div class="actions"><button class="btn-secondary" onclick="editMission(${m.id})">✏️ Editar</button><button class="btn-danger" onclick="deleteMission(${m.id})">🗑️ Excluir</button></div>
  </article>`).join(""):`<div class="empty">Nenhuma missão encontrada neste filtro.</div>`;
@@ -134,6 +166,7 @@ document.getElementById("form").addEventListener("submit",e=>{
 });
 document.querySelectorAll("[data-filter]").forEach(btn=>btn.onclick=()=>{currentFilter=btn.dataset.filter;document.querySelectorAll("[data-filter]").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()});
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+document.getElementById("itemModal").onclick=e=>{if(e.target.id==="itemModal")closeItemModal()};
 render();
 </script>
 </body>
