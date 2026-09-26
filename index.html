@@ -1,615 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Horários (SA) - Agenda com Alarme</title>
-  <style>
-    :root{
-      --bg:#0b0f17; --card:#121a2a; --muted:#94a3b8; --text:#e5e7eb;
-      --line:rgba(148,163,184,.18); --chipLine:rgba(148,163,184,.22);
-      --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:radial-gradient(1200px 800px at 10% 0%, rgba(34,197,94,.12), transparent 60%),
-                 radial-gradient(1200px 800px at 90% 10%, rgba(245,158,11,.10), transparent 55%),
-                 var(--bg);
-      color:var(--text);
-    }
-    header{padding:26px 16px 10px; max-width:1100px; margin:0 auto;}
-    h1{margin:0 0 6px; font-size:20px; letter-spacing:.2px;}
-    .sub{margin:0; color:var(--muted); font-size:13px; line-height:1.4;}
-
-    .toolbar{
-      max-width:1100px; margin:12px auto 0; padding:0 16px 14px;
-      display:grid; grid-template-columns: 1fr 220px 160px; gap:10px;
-    }
-    @media (max-width:900px){ .toolbar{grid-template-columns:1fr;} }
-
-    .alarmsBar{
-      max-width:1100px; margin:0 auto; padding:0 16px 16px;
-      display:grid; grid-template-columns: 220px 220px 1fr 160px; gap:10px;
-      align-items:center;
-    }
-    @media (max-width:900px){ .alarmsBar{grid-template-columns:1fr; } }
-
-    .input, .select, .btn{
-      background:rgba(18,26,42,.75);
-      border:1px solid var(--line);
-      color:var(--text);
-      border-radius:14px;
-      padding:12px 12px;
-      outline:none;
-      width:100%;
-    }
-    .input::placeholder{color:rgba(148,163,184,.7)}
-    .select{appearance:none}
-    .btn{cursor:pointer; font-weight:700; transition:.15s transform ease, .15s border-color ease;}
-    .btn:hover{transform:translateY(-1px); border-color:rgba(148,163,184,.35)}
-    .btn:active{transform:translateY(0)}
-    .btn.primary{border-color:rgba(34,197,94,.45)}
-    .btn.danger{border-color:rgba(239,68,68,.45)}
-
-    .mini{
-      display:flex; gap:8px; flex-wrap:wrap;
-      padding:10px 12px; border-radius:14px; border:1px solid var(--line);
-      background:rgba(18,26,42,.55);
-      color:var(--muted); font-size:12px;
-    }
-    .pill{
-      display:inline-flex; gap:6px; align-items:center;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid var(--chipLine);
-      background:rgba(15,23,42,.65);
-      color:rgba(229,231,235,.92);
-      font-size:12px;
-      white-space:nowrap;
-    }
-    .dot{width:8px;height:8px;border-radius:50%}
-    .dot.green{background:var(--accent)}
-    .dot.orange{background:var(--warn)}
-    .dot.red{background:var(--danger)}
-
-    main{max-width:1100px; margin:0 auto; padding:0 16px 40px;}
-    .grid{display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px;}
-    @media (max-width:960px){ .grid{grid-template-columns: repeat(2, minmax(0,1fr));} }
-    @media (max-width:640px){ .grid{grid-template-columns: 1fr;} }
-
-    .card{
-      background:linear-gradient(180deg, rgba(18,26,42,.92), rgba(18,26,42,.78));
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 14px 12px;
-      box-shadow:0 10px 30px rgba(0,0,0,.25);
-    }
-    .card h2{margin:0; font-size:14px; letter-spacing:.2px;}
-    .badgeRow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
-    .badge{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:6px 10px; border-radius:999px;
-      background:rgba(15,23,42,.75); border:1px solid var(--chipLine);
-      color:rgba(229,231,235,.92); font-size:12px; line-height:1;
-    }
-
-    .list{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; display:flex; flex-direction:column; gap:8px;}
-    .row{
-      display:grid;
-      grid-template-columns: 1fr auto;
-      gap:10px;
-      padding:10px 10px;
-      border-radius:14px;
-      border:1px solid rgba(148,163,184,.14);
-      background:rgba(11,15,23,.25);
-      align-items:center;
-    }
-    .left{min-width:0}
-    .title{font-size:13px; font-weight:750; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-    .meta{color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-    .right{display:flex; gap:8px; align-items:center; justify-content:flex-end;}
-    .time{
-      font-variant-numeric:tabular-nums;
-      font-size:13px; font-weight:900;
-      padding:7px 10px; border-radius:12px;
-      border:1px solid rgba(148,163,184,.20);
-      background:rgba(15,23,42,.55);
-      white-space:nowrap;
-    }
-
-    .toggle{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:7px 10px; border-radius:12px;
-      border:1px solid rgba(148,163,184,.20);
-      background:rgba(15,23,42,.45);
-      cursor:pointer; user-select:none;
-      font-size:12px;
-    }
-    .switch{
-      width:34px; height:18px; border-radius:999px;
-      border:1px solid rgba(148,163,184,.25);
-      background:rgba(148,163,184,.15);
-      position:relative;
-    }
-    .switch::after{
-      content:"";
-      width:14px; height:14px; border-radius:50%;
-      background:rgba(229,231,235,.9);
-      position:absolute; top:1px; left:2px;
-      transition:.15s left ease, .15s background ease;
-    }
-    .toggle.on{border-color:rgba(34,197,94,.40)}
-    .toggle.on .switch{background:rgba(34,197,94,.25)}
-    .toggle.on .switch::after{left:18px; background:rgba(34,197,94,.95)}
-    .empty{margin-top:16px; padding:14px; border-radius:16px; border:1px dashed var(--line); color:var(--muted); display:none;}
-    .note{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.4;}
-    .small{font-size:12px; color:var(--muted)}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Missões Semanais</title>
+<style>
+:root{--bg:#0b1020;--panel:#151d32;--panel2:#1c2740;--text:#f5f7fb;--muted:#aab4ca;--accent:#7c5cff;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--border:#2b3857}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(135deg,#080c18,#111a30);color:var(--text);min-height:100vh}
+.container{max-width:1150px;margin:auto;padding:28px 18px 50px}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:22px}
+h1{margin:0;font-size:30px}.subtitle{color:var(--muted);margin-top:5px}
+button{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;color:white;background:var(--accent)}
+button:hover{filter:brightness(1.1)}.btn-secondary{background:#293650}.btn-danger{background:#b91c1c}.btn-success{background:#15803d}
+.stats{background:var(--panel);border:1px solid var(--border);padding:18px;border-radius:16px;margin-bottom:18px}
+.progress-head{display:flex;justify-content:space-between;margin-bottom:10px}.progress{height:12px;background:#27334d;border-radius:20px;overflow:hidden}.bar{height:100%;background:linear-gradient(90deg,#7c5cff,#22c55e);width:0%;transition:.25s}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.controls button.active{background:#7c5cff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:15px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;transition:.2s}
+.card.done{border-color:#1f8f4d;opacity:.72}.card.done .title{text-decoration:line-through}
+.card.important{box-shadow:0 0 0 1px rgba(239,68,68,.12)}
+.row{display:flex;gap:12px;align-items:flex-start}.check{width:28px;height:28px;border-radius:8px;border:2px solid #64748b;background:transparent;display:grid;place-items:center;flex:none;font-size:16px;padding:0}.done .check{background:var(--green);border-color:var(--green)}
+.title{font-size:18px;font-weight:800;line-height:1.25}.tag{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase}.important-tag{background:rgba(239,68,68,.15);color:#f87171}.low-tag{background:rgba(245,158,11,.14);color:#fbbf24}
+.info{margin-top:14px;display:grid;gap:8px;color:#d7deed;font-size:14px}.label{color:var(--muted);font-size:12px;text-transform:uppercase;font-weight:800}.actions{display:flex;gap:7px;margin-top:15px}.actions button{font-size:12px;padding:8px 10px}
+.empty{padding:45px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--border);border-radius:16px;grid-column:1/-1}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:15px;z-index:5}.modal.open{display:flex}.modal-box{width:min(650px,100%);background:#121a2d;border:1px solid var(--border);border-radius:18px;padding:22px}
+.form{display:grid;gap:12px}.form label{font-size:13px;color:var(--muted);font-weight:700}.form input,.form textarea,.form select{width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0d1425;color:white;font:inherit}.form textarea{min-height:100px;resize:vertical}.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:5px}
+@media(max-width:600px){.top{align-items:flex-start;flex-direction:column}h1{font-size:25px}.container{padding:20px 12px}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Agenda de Horários (SA) — com Alarme</h1>
-    <p class="sub">Ative notificações e marque os horários que você quer ser avisado.</p>
-  </header>
+<div class="container">
+  <div class="top">
+    <div><h1>🎯 Missões Semanais</h1><div class="subtitle">Controle de bosses, eventos e recompensas</div></div>
+    <button onclick="openModal()">➕ Mais Missão</button>
+  </div>
 
-  <section class="toolbar">
-    <input id="q" class="input" placeholder="Pesquisar: ex. labirinto, boss, terça, 23:00, sul..." />
-    <select id="cat" class="select"></select>
-    <button id="clear" class="btn">Limpar</button>
+  <section class="stats">
+    <div class="progress-head"><strong>Progresso da semana</strong><strong id="count">0 / 8</strong></div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
   </section>
 
-  <section class="alarmsBar">
-    <button id="enableNoti" class="btn primary">Ativar notificações</button>
-    <input id="minutesBefore" class="input" type="number" min="0" step="1" value="5" />
-    <div class="mini" id="statusBox">
-      <span class="pill"><span class="dot orange"></span><span id="notiState">Notificação: não verificada</span></span>
-      <span class="pill"><span class="dot green"></span><span id="alarmCount">Alarmes: 0</span></span>
-      <span class="pill"><span class="dot red"></span><span id="nextAlarm">Próximo: —</span></span>
-    </div>
-    <button id="testNoti" class="btn">Testar</button>
-  </section>
+  <div class="controls">
+    <button class="active" data-filter="all">Todas</button>
+    <button class="btn-secondary" data-filter="pending">Pendentes</button>
+    <button class="btn-secondary" data-filter="done">Concluídas</button>
+    <button class="btn-secondary" data-filter="important">Importantes</button>
+    <button class="btn-secondary" data-filter="low">Pouco importantes</button>
+    <button class="btn-danger" onclick="resetWeek()">↻ Resetar semana</button>
+  </div>
 
-  <main>
-    <div id="grid" class="grid"></div>
-    <div id="empty" class="empty">Nada encontrado com esses filtros.</div>
-    <div class="note">
-      <b>Importante:</b> para notificação funcionar bem, deixe o site aberto (pode ficar em segundo plano).
-      Alguns PCs/celulares “matam” abas por economia de bateria. Se isso acontecer, use o PC ligado ou fixe a aba.
-      <div class="small">Dica no Edge/Chrome: permita notificações quando o navegador perguntar.</div>
-    </div>
-  </main>
+  <div class="grid" id="missions"></div>
+</div>
+
+<div class="modal" id="modal">
+ <div class="modal-box">
+  <h2 id="modalTitle">➕ Nova missão</h2>
+  <form class="form" id="form">
+   <input type="hidden" id="editId">
+   <label>Local / Missão<input id="local" required></label>
+   <label>Mundo<input id="world" placeholder="Ex.: Mundo 1"></label>
+   <label>Boss / Evento<input id="boss"></label>
+   <label>Como fazer<textarea id="how"></textarea></label>
+   <label>Premiação<input id="reward"></label>
+   <label>Prioridade<select id="priority"><option value="important">Importante</option><option value="low">Pouco importante</option></select></label>
+   <div class="form-actions"><button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button><button type="submit">Salvar missão</button></div>
+  </form>
+ </div>
+</div>
 
 <script>
-/** =========================
- *  DADOS (da imagem)
- *  ========================= */
-const SECTIONS = [
-  { category:"Word Boss", title:"Word Boss - Manhã", tags:["SA","Manhã"], items:[
-    { name:"Labirinto", time:"10:00" }, { name:"Vale", time:"12:00" }
-  ]},
-  { category:"Word Boss", title:"Word Boss - Noite", tags:["SA","Noite"], items:[
-    { name:"Labirinto", time:"20:00" }, { name:"Vale", time:"22:00" }
-  ]},
-  { category:"Touro / Velho", title:"Touro - Velho", tags:["SA"], items:[
-    { name:"Touro", time:"22:00" }, { name:"Velho", time:"00:00" }
-  ]},
-  { category:"Boss Mundial", title:"Boss Mundial", tags:["SA","23:00"], items:[
-    { name:"Krukán", day:"Segunda-feira", time:"23:00" },
-    { name:"Nerkán", day:"Terça-feira",   time:"23:00" },
-    { name:"Turkán", day:"Quinta-feira",  time:"23:00" },
-    { name:"Utukán", day:"Sexta-feira",   time:"23:00" },
-  ]},
-  { category:"Praça Mágica", title:"Praça Mágica - Líder 3", tags:["SA"], items:[
-    { name:"Madrugada", time:"06:00" }, { name:"Madrugada", time:"09:00" },
-    { name:"Manhã", time:"12:00" }, { name:"Manhã", time:"15:00" },
-    { name:"Tarde", time:"18:00" }, { name:"Tarde", time:"21:00" },
-    { name:"Tarde", time:"00:00" }, { name:"Noite", time:"03:00" },
-  ]},
-  { category:"Pico Secreto", title:"Pico Secreto - Boss Red", tags:["SA"], items:[
-    { name:"Norte", time:"05:00" }, { name:"Sul", time:"07:00" },
-    { name:"Norte", time:"10:00" }, { name:"Sul", time:"13:00" },
-    { name:"Norte", time:"16:00" }, { name:"Sul", time:"19:00" },
-    { name:"Norte", time:"22:00" }, { name:"Sul", time:"01:00" },
-  ]},
-  { category:"Dominação", title:"Dominação - Torre", tags:["SA"], items:[
-    { name:"Janela 1", time:"09:00 - 13:00" },
-    { name:"Janela 2", time:"15:00 - 19:00" },
-    { name:"Janela 3", time:"21:00 - 01:00" },
-  ]},
-  { category:"Juja / Evento", title:"Juja", tags:["SA"], items:[
-    { name:"Juja", time:"11:00" }, { name:"Juja", time:"17:00" }, { name:"Juja", time:"23:00" },
-  ]},
-  { category:"Juja / Evento", title:"Evento", tags:["SA"], items:[
-    { name:"Evento", time:"10:00 / 12:00" },
-    { name:"Evento", time:"16:00 / 18:00" },
-    { name:"Evento", time:"22:00 / 00:00" },
-  ]},
-  { category:"Praça 11 (MS 11)", title:"Praça 11 - MS 11", tags:["SA"], items:[
-    { name:"Fury", time:"11:00" }, { name:"Frenzy", time:"14:00" },
-    { name:"Fury", time:"17:00" }, { name:"Frenzy", time:"20:00" },
-    { name:"Fury", time:"23:00" }, { name:"Frenzy", time:"02:00" },
-    { name:"Fury", time:"05:00" }, { name:"Frenzy", time:"08:00" },
-  ]},
-  { category:"Pico 11 (SP 11)", title:"Pico 11 - SP 11", tags:["SA"], items:[
-    { name:"Boss Sul", time:"07:00" }, { name:"Boss Norte", time:"13:00" },
-    { name:"Boss Sul", time:"19:00" }, { name:"Boss Norte", time:"01:00" },
-  ]},
-  { category:"Purgatório", title:"Purgatorio", tags:["SA"], items:[
-    { name:"1º Horário", time:"06:00" }, { name:"2º Horário", time:"12:00" },
-    { name:"3º Horário", time:"18:00" }, { name:"4º Horário", time:"00:00" },
-  ]},
+const initialMissions = [
+ {id:1,local:"Compartimento Interno do Navio",world:"",boss:"Premiação / Evento de quinta-feira",how:"Como fazer o evento de quinta-feira",reward:"500 PO",priority:"low",done:false},
+ {id:2,local:"Casa de Máquina",world:"",boss:"Premiação / Evento de quinta-feira",how:"Como fazer o evento de quinta-feira",reward:"500 Elixir",priority:"low",done:false},
+ {id:3,local:"Floresta do Touro Malvado",world:"Mundo 1",boss:"Boss Matha",how:"Derrotar o Boss Matha",reward:"Moeda do Dragão",priority:"important",done:false},
+ {id:4,local:"1F Templo do Touro",world:"Mundo 1",boss:"Boss Touro",how:"Derrotar o Boss Touro",reward:"Pedra Preta Raro",priority:"low",done:false},
+ {id:5,local:"Santuário dos Touros",world:"Mundo 1",boss:"Boss Touro",how:"Derrotar o Boss Touro",reward:"Moeda do Dragão",priority:"important",done:false},
+ {id:6,local:"Mundo do Vazio",world:"",boss:"Boss",how:"Derrotar o Boss",reward:"—",priority:"low",done:false},
+ {id:7,local:"Parkua",world:"",boss:"Víbora",how:"Tesouro de Porco + matar Boss do Vale das Serpentes (Mundo 8) e Gruta (Mundo 8)",reward:"Pedra Roxa Lendária e Pedaço Épico",priority:"important",done:false},
+ {id:8,local:"Parkua",world:"",boss:"Arahan",how:"Tesouro de Flor + matar Boss 1F, 2F, 3F e Mina",reward:"Pedra Roxa Lendária e Pedaço Épico",priority:"important",done:false}
 ];
 
-/** =========================
- *  HELPERS
- *  ========================= */
-const grid = document.getElementById("grid");
-const emptyBox = document.getElementById("empty");
-const q = document.getElementById("q");
-const cat = document.getElementById("cat");
-const clearBtn = document.getElementById("clear");
+let missions = JSON.parse(localStorage.getItem("weeklyMissions")) || initialMissions;
+let currentFilter = "all";
 
-const enableNotiBtn = document.getElementById("enableNoti");
-const testNotiBtn = document.getElementById("testNoti");
-const minutesBeforeEl = document.getElementById("minutesBefore");
-const notiStateEl = document.getElementById("notiState");
-const alarmCountEl = document.getElementById("alarmCount");
-const nextAlarmEl = document.getElementById("nextAlarm");
-
-const STORAGE_KEY = "sa_alarms_v1"; // salva no navegador
-const FIRED_KEY = "sa_fired_today_v1";
-
-function uniq(arr){ return [...new Set(arr)]; }
-function pad2(n){ return String(n).padStart(2,"0"); }
-
-function sectionDot(section){
-  const t = (section.category + " " + section.title).toLowerCase();
-  if (t.includes("pico secreto")) return "red";
-  if (t.includes("purg")) return "orange";
-  return "green";
-}
-function matchesQuery(text, query){
-  if(!query) return true;
-  return text.toLowerCase().includes(query.toLowerCase());
-}
-
-// transforma "HH:MM" em Date (hoje). Se já passou, joga para amanhã.
-function nextDateFromHHMM(hhmm){
-  const [h,m] = hhmm.split(":").map(Number);
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-  if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
-  return d;
-}
-
-// pega apenas horários simples "HH:MM" dentro de strings tipo:
-// "09:00 - 13:00" ou "10:00 / 12:00"
-function extractTimes(str){
-  const matches = String(str).match(/\b([01]\d|2[0-3]):[0-5]\d\b/g);
-  return matches ? matches : [];
-}
-
-function makeId(section, item, t){
-  // id estável
-  const base = `${section.category}||${section.title}||${item.name}||${item.day||""}||${t}`;
-  return btoa(unescape(encodeURIComponent(base)));
-}
-
-/** =========================
- *  ALARME (Notificações)
- *  ========================= */
-function canNotify(){
-  return "Notification" in window;
-}
-function updateNotiState(){
-  if(!canNotify()){
-    notiStateEl.textContent = "Notificação: não suportada";
-    return;
-  }
-  notiStateEl.textContent = `Notificação: ${Notification.permission}`;
-}
-
-async function askPermission(){
-  if(!canNotify()) return false;
-  if(Notification.permission === "granted") return true;
-  const p = await Notification.requestPermission();
-  updateNotiState();
-  return p === "granted";
-}
-
-function showNotification(title, body){
-  if(!canNotify() || Notification.permission !== "granted") return;
-  const n = new Notification(title, {
-    body,
-    silent: false
-  });
-  // opcional: fecha automático
-  setTimeout(()=> n.close?.(), 8000);
-}
-
-// som simples (beep) usando WebAudio (sem arquivo externo)
-function beep(){
-  try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type = "sine";
-    o.frequency.value = 880;
-    g.gain.value = 0.08;
-    o.start();
-    setTimeout(()=>{ o.stop(); ctx.close(); }, 220);
-  }catch(e){}
-}
-
-/** =========================
- *  STORAGE
- *  ========================= */
-function loadAlarmSet(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return new Set(arr);
-  }catch(e){
-    return new Set();
-  }
-}
-function saveAlarmSet(set){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
-}
-function loadFiredToday(){
-  const today = new Date();
-  const key = `${today.getFullYear()}-${pad2(today.getMonth()+1)}-${pad2(today.getDate())}`;
-  try{
-    const raw = localStorage.getItem(FIRED_KEY);
-    const obj = raw ? JSON.parse(raw) : {};
-    return { key, fired: new Set(obj[key] || []) };
-  }catch(e){
-    return { key, fired: new Set() };
-  }
-}
-function saveFiredToday(dateKey, firedSet){
-  try{
-    const raw = localStorage.getItem(FIRED_KEY);
-    const obj = raw ? JSON.parse(raw) : {};
-    obj[dateKey] = [...firedSet];
-    localStorage.setItem(FIRED_KEY, JSON.stringify(obj));
-  }catch(e){}
-}
-
-let alarmSet = loadAlarmSet();
-
-/** =========================
- *  RENDER
- *  ========================= */
-function buildCategoryOptions(){
-  const categories = ["Todas", ...uniq(SECTIONS.map(s => s.category)).sort((a,b)=>a.localeCompare(b))];
-  cat.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
-}
-
+function save(){localStorage.setItem("weeklyMissions",JSON.stringify(missions))}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function render(){
-  const query = q.value.trim();
-  const selected = cat.value;
-
-  let shown = 0;
-  grid.innerHTML = "";
-
-  SECTIONS.forEach(section => {
-    if (selected !== "Todas" && section.category !== selected) return;
-
-    const sectionText = [
-      section.category, section.title, ...(section.tags||[]),
-      ...section.items.map(i => `${i.name} ${i.day||""} ${i.time||""}`)
-    ].join(" | ");
-
-    if (!matchesQuery(sectionText, query)) return;
-
-    const dot = sectionDot(section);
-    const tagBadges = (section.tags || []).map(t => `<span class="badge"><span class="dot ${dot}"></span>${t}</span>`).join("");
-
-    const itemsHtml = section.items.map(item => {
-      // uma linha pode ter mais de um horário
-      const times = extractTimes(item.time);
-      const rows = times.map(t => {
-        const id = makeId(section, item, t);
-        const isOn = alarmSet.has(id);
-        const meta = item.day ? item.day : section.category;
-
-        return `
-          <div class="row">
-            <div class="left">
-              <div class="title">${item.name}</div>
-              <div class="meta">${meta}</div>
-            </div>
-            <div class="right">
-              <div class="time">${t}</div>
-              <div class="toggle ${isOn ? "on":""}" data-alarm-id="${id}" data-name="${item.name}" data-meta="${meta}" data-time="${t}">
-                <div class="switch"></div>
-                <div>${isOn ? "Alarmar" : "Alarmar"}</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      // se não tiver HH:MM, mostra a linha sem toggle
-      if(times.length === 0){
-        const meta = item.day ? item.day : section.category;
-        return `
-          <div class="row">
-            <div class="left">
-              <div class="title">${item.name}</div>
-              <div class="meta">${meta}</div>
-            </div>
-            <div class="right">
-              <div class="time">${item.time}</div>
-            </div>
-          </div>
-        `;
-      }
-
-      return rows;
-    }).join("");
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h2>${section.title}</h2>
-      <div class="badgeRow">
-        <span class="badge"><span class="dot ${dot}"></span>${section.category}</span>
-        ${tagBadges}
-      </div>
-      <div class="list">${itemsHtml}</div>
-    `;
-    grid.appendChild(card);
-    shown++;
-  });
-
-  emptyBox.style.display = shown ? "none" : "block";
-  bindToggles();
-  updateAlarmStats();
+ const el=document.getElementById("missions");
+ let list=missions.filter(m=>{
+  if(currentFilter==="pending")return !m.done;
+  if(currentFilter==="done")return m.done;
+  if(currentFilter==="important")return m.priority==="important";
+  if(currentFilter==="low")return m.priority==="low";
+  return true;
+ });
+ el.innerHTML=list.length?list.map(m=>`
+ <article class="card ${m.done?"done":""} ${m.priority==="important"?"important":""}">
+  <div class="row">
+   <button class="check" onclick="toggle(${m.id})">${m.done?"✓":""}</button>
+   <div><div class="title">${esc(m.local)}</div><span class="tag ${m.priority==="important"?"important-tag":"low-tag"}">${m.priority==="important"?"IMPORTANTE":"POUCO IMPORTANTE"}</span></div>
+  </div>
+  <div class="info">
+   ${m.world?`<div><span class="label">🌍 Mundo</span><br>${esc(m.world)}</div>`:""}
+   <div><span class="label">👹 Boss / Evento</span><br>${esc(m.boss)}</div>
+   ${m.how?`<div><span class="label">⚔️ Como fazer</span><br>${esc(m.how)}</div>`:""}
+   <div><span class="label">🎁 Premiação</span><br>${esc(m.reward)}</div>
+  </div>
+  <div class="actions"><button class="btn-secondary" onclick="editMission(${m.id})">✏️ Editar</button><button class="btn-danger" onclick="deleteMission(${m.id})">🗑️ Excluir</button></div>
+ </article>`).join(""):`<div class="empty">Nenhuma missão encontrada neste filtro.</div>`;
+ updateProgress();
 }
-
-function bindToggles(){
-  document.querySelectorAll("[data-alarm-id]").forEach(el => {
-    el.onclick = () => {
-      const id = el.getAttribute("data-alarm-id");
-      if(alarmSet.has(id)) alarmSet.delete(id);
-      else alarmSet.add(id);
-      saveAlarmSet(alarmSet);
-      render();
-    };
-  });
+function updateProgress(){
+ const done=missions.filter(m=>m.done).length,total=missions.length,pct=total?done/total*100:0;
+ document.getElementById("count").textContent=`${done} / ${total}`;
+ document.getElementById("bar").style.width=pct+"%";
 }
-
-/** =========================
- *  SCHEDULER (checa a cada 10s)
- *  ========================= */
-function getMinutesBefore(){
-  const n = Number(minutesBeforeEl.value);
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 5;
+function toggle(id){const m=missions.find(x=>x.id===id);m.done=!m.done;save();render()}
+function deleteMission(id){if(confirm("Excluir esta missão?")){missions=missions.filter(m=>m.id!==id);save();render()}}
+function resetWeek(){if(confirm("Desmarcar todas as missões?")){missions.forEach(m=>m.done=false);save();render()}}
+function openModal(id=null){
+ document.getElementById("modal").classList.add("open");
+ document.getElementById("editId").value=id||"";
+ document.getElementById("modalTitle").textContent=id?"✏️ Editar missão":"➕ Nova missão";
+ if(id){let m=missions.find(x=>x.id===id);["local","world","boss","how","reward","priority"].forEach(k=>document.getElementById(k).value=m[k]||"")}
+ else document.getElementById("form").reset();
 }
-
-function computeNextAlarm(){
-  const minsBefore = getMinutesBefore();
-  const all = [];
-
-  // cria “eventos” para cada id com seu horário HH:MM
-  SECTIONS.forEach(section => {
-    section.items.forEach(item => {
-      extractTimes(item.time).forEach(t => {
-        const id = makeId(section, item, t);
-        if(!alarmSet.has(id)) return;
-
-        const baseDate = nextDateFromHHMM(t);
-        const fireAt = new Date(baseDate.getTime() - minsBefore * 60 * 1000);
-
-        all.push({
-          id,
-          name: item.name,
-          meta: item.day ? item.day : section.category,
-          time: t,
-          fireAt,
-          baseDate
-        });
-      });
-    });
-  });
-
-  all.sort((a,b)=>a.fireAt - b.fireAt);
-  return all[0] || null;
-}
-
-function formatDT(d){
-  const dd = pad2(d.getDate());
-  const mm = pad2(d.getMonth()+1);
-  const hh = pad2(d.getHours());
-  const mi = pad2(d.getMinutes());
-  return `${dd}/${mm} ${hh}:${mi}`;
-}
-
-function updateAlarmStats(){
-  alarmCountEl.textContent = `Alarmes: ${alarmSet.size}`;
-
-  const next = computeNextAlarm();
-  if(!next){
-    nextAlarmEl.textContent = "Próximo: —";
-    return;
-  }
-  nextAlarmEl.textContent = `Próximo: ${next.name} (${next.meta}) às ${next.time} | aviso ${formatDT(next.fireAt)}`;
-}
-
-function tick(){
-  // evita disparar mais de uma vez por dia/alarme
-  const { key: todayKey, fired } = loadFiredToday();
-  const minsBefore = getMinutesBefore();
-
-  const now = new Date();
-
-  SECTIONS.forEach(section => {
-    section.items.forEach(item => {
-      extractTimes(item.time).forEach(t => {
-        const id = makeId(section, item, t);
-        if(!alarmSet.has(id)) return;
-
-        const baseDate = nextDateFromHHMM(t);
-        const fireAt = new Date(baseDate.getTime() - minsBefore * 60 * 1000);
-
-        // janela de disparo: se now passou fireAt mas não passou 30s
-        const diff = now.getTime() - fireAt.getTime();
-        if(diff >= 0 && diff < 30000 && !fired.has(id)){
-          fired.add(id);
-          saveFiredToday(todayKey, fired);
-
-          const label = item.day ? `${item.day}` : section.category;
-          const title = "⏰ Alarme SA";
-          const body = `${item.name} (${label}) • horário ${t} • aviso ${minsBefore} min antes`;
-          showNotification(title, body);
-          beep();
-        }
-      });
-    });
-  });
-
-  updateAlarmStats();
-}
-
-setInterval(tick, 10000); // 10 segundos
-
-/** =========================
- *  EVENTS
- *  ========================= */
-q.addEventListener("input", render);
-cat.addEventListener("change", render);
-clearBtn.addEventListener("click", () => {
-  q.value = "";
-  cat.value = "Todas";
-  render();
+function closeModal(){document.getElementById("modal").classList.remove("open")}
+function editMission(id){openModal(id)}
+document.getElementById("form").addEventListener("submit",e=>{
+ e.preventDefault();const id=Number(document.getElementById("editId").value);
+ const data={local:local.value.trim(),world:world.value.trim(),boss:boss.value.trim(),how:how.value.trim(),reward:reward.value.trim()||"—",priority:priority.value};
+ if(id){Object.assign(missions.find(m=>m.id===id),data)}else{missions.push({id:Date.now(),...data,done:false})}
+ save();closeModal();render();
 });
-minutesBeforeEl.addEventListener("change", updateAlarmStats);
-
-enableNotiBtn.addEventListener("click", async () => {
-  const ok = await askPermission();
-  if(ok){
-    showNotification("✅ Notificações ativadas", "Agora é só marcar os horários com Alarmar.");
-    beep();
-  }else{
-    alert("Permissão negada. No navegador, permita notificações para este site.");
-  }
-});
-
-testNotiBtn.addEventListener("click", async () => {
-  const ok = await askPermission();
-  if(!ok){
-    alert("Ative as notificações primeiro.");
-    return;
-  }
-  showNotification("🔔 Teste de alarme", "Se você viu isso, está tudo certo!");
-  beep(20000);
-});
-
-buildCategoryOptions();
-updateNotiState();
+document.querySelectorAll("[data-filter]").forEach(btn=>btn.onclick=()=>{currentFilter=btn.dataset.filter;document.querySelectorAll("[data-filter]").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()});
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
 render();
 </script>
 </body>
